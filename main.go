@@ -8,25 +8,32 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 )
 
 const (
 	DbUser     = "postgres"
 	DbPassword = "1"
 	DbName     = "postgres"
+	DbHost     = "clair_postgres"
+	DbPort     = "5432"
+)
+
+var (
+	db *sql.DB
 )
 
 func check(err error) {
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
-func closeDb(db *sql.DB) {
+func closeDb() {
 	err := db.Close()
 	check(err)
 }
 
-func dbName(db *sql.DB) string {
+func dbName() string {
 	rows, err := db.Query("SELECT datname FROM pg_database WHERE datistemplate = false limit 1;")
 	check(err)
 	if rows.Next() == false {
@@ -40,20 +47,31 @@ func dbName(db *sql.DB) string {
 	}
 }
 
-func dbSelect() interface{} {
-	dbInfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DbUser, DbPassword, DbName)
-	db, err := sql.Open("postgres", dbInfo)
+func init() {
+	dbInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", DbHost, DbPort, DbUser, DbPassword, DbName)
+	fmt.Println(dbInfo)
+	var err error
+	db, err = sql.Open("postgres", dbInfo)
 	check(err)
-	defer closeDb(db)
 
-	dbname := dbName(db)
-	return struct {
-		Test string
-	}{dbname}
+	for i, connected := 0, false; connected == false && i < 4; i++ {
+		err = db.Ping()
+		if err == nil {
+			connected = true
+			return
+		} else {
+			log.Println("Error: Could not establish a connection with the database!", err, " but I still tried to connect...")
+			time.Sleep(2 * time.Second)
+		}
+	}
+	panic(err)
 }
 
 func main() {
-	dt := dbSelect()
+	defer closeDb()
+	dt := struct {
+		Test string
+	}{dbName()}
 
 	httpAddr := flag.String("http", ":8080", "Listen address")
 	flag.Parse()
@@ -68,7 +86,7 @@ func root(data interface{}) http.Handler {
 		// tmpl is the HTML template that drives the user interface.
 		var tmpl = template.Must(template.New("tmpl").Parse(`
 <!DOCTYPE html><html><body><center>
-	<h2>Hello, Go! {{.Test}} </h2>
+	<h2>Hello, Go!!? {{.Test}} </h2>
 </center></body></html>
 `))
 		tmpl.Execute(w, data)
