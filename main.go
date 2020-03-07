@@ -86,7 +86,7 @@ func root(data interface{}) http.Handler {
 		// tmpl is the HTML template that drives the user interface.
 		var tmpl = template.Must(template.New("tmpl").Parse(`
 <!DOCTYPE html><html><body><center>
-	<h2>Hello, Go!!? {{.Test}} </h2>
+	<h2>Hello, {{.Test}}, from docker! </h2>
 </center></body></html>
 `))
 		tmpl.Execute(w, data)
