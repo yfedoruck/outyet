@@ -6,11 +6,11 @@ services:
     # image: outyet
     build: .
     environment:
-      DEBUG: 'true'
+      - DEBUG=True
     depends_on:
       - pg
     ports:
-      - "5000:8080"
+      - "8080:5000"
   pg:
     image: postgres
     container_name: clair_postgres

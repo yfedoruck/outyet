@@ -15,4 +15,5 @@ RUN go install github.com/yfedoruck/outyet
 ENTRYPOINT /go/bin/outyet
 
 # Document that the service listens on port 8080.
+# EXPOSE is absolutely useless and it doesn't affect anything. It's only hint for docs.
 EXPOSE 8080
