@@ -7,12 +7,15 @@ services:
     build: .
     environment:
       - DEBUG=True
+      - USERDOMAIN=${USERDOMAIN}
     depends_on:
       - pg
     ports:
       - "8080:5000"
+#    volumes:
+#      - .:/go/src/github.com/yfedoruck/outyet
   pg:
-    image: postgres
+    image: postgres:latest
     container_name: clair_postgres
     environment:
       POSTGRES_PASSWORD: 1

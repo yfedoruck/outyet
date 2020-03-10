@@ -2,6 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"path/filepath"
+	"runtime"
+
 	// "flag"
 	"fmt"
 	"os"
@@ -13,17 +17,51 @@ import (
 	"time"
 )
 
-const (
-	DbUser     = "postgres"
-	DbPassword = "1"
-	DbName     = "postgres"
-	DbHost     = "clair_postgres"
-	DbPort     = "5432"
-)
-
 var (
 	db *sql.DB
 )
+
+var baseDir string
+
+func basePath() string {
+	if baseDir != "" {
+		return baseDir
+	}
+	_, b, _, ok := runtime.Caller(0)
+	if !ok {
+		log.Panic("Caller error")
+	}
+
+	baseDir = filepath.Dir(b)
+	return baseDir
+}
+
+type dbConf struct {
+	User     string `json:"User"`
+	Password string `json:"Password"`
+	Name     string `json:"Name"`
+	Host     string `json:"Host"`
+	Port     string `json:"Port"`
+}
+
+func pgConfig() dbConf {
+	file, err := os.Open(basePath() + filepath.FromSlash("/config/"+env()+"/postgres.json"))
+	check(err)
+
+	dbConf := dbConf{}
+	err = json.NewDecoder(file).Decode(&dbConf)
+	check(err)
+
+	return dbConf
+}
+
+func env() string {
+	domain := os.Getenv("USERDOMAIN")
+	if domain == "home" {
+		return "local"
+	}
+	return "heroku"
+}
 
 func check(err error) {
 	if err != nil {
@@ -50,7 +88,8 @@ func dbName() string {
 }
 
 func init() {
-	dbInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", DbHost, DbPort, DbUser, DbPassword, DbName)
+	dbConf := pgConfig()
+	dbInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbConf.Host, dbConf.Port, dbConf.User, dbConf.Password, dbConf.Name)
 	fmt.Println(dbInfo)
 	var err error
 	db, err = sql.Open("postgres", dbInfo)
