@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-func parentPath() string {
+func myUserPath() string {
 	dir, _ := os.Getwd()
-	return dir + filepath.FromSlash("/src/github.com/yfedoruck/outyet/")
+	return dir + filepath.FromSlash("/src/github.com/yfedoruck/")
 }
